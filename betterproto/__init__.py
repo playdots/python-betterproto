@@ -843,9 +843,9 @@ class Message(ABC):
                         self._betterproto.cls_by_field[field_name]
                     )  # type: ignore
                     if isinstance(v, list):
-                        output[cased_name] = [enum_values[e].name for e in v]
+                        output[cased_name] = [enum_values[e].value for e in v]
                     else:
-                        output[cased_name] = enum_values[v].name
+                        output[cased_name] = enum_values[v].value
                 else:
                     output[cased_name] = v
         return output
