@@ -644,8 +644,12 @@ class Message(ABC):
 
     @classmethod
     def _type_hint(cls, field_name: str) -> Type:
-        module = inspect.getmodule(cls)
-        type_hints = get_type_hints(cls, vars(module))
+        global_vars = {}
+        for base in inspect.getmro(cls):
+            module = inspect.getmodule(base)
+            global_vars.update(vars(module))
+
+        type_hints = get_type_hints(cls, global_vars)
         return type_hints[field_name]
 
     @classmethod
