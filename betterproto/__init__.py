@@ -255,12 +255,13 @@ class Enum(int, enum.Enum):
     """Protocol buffers enumeration base class. Acts like `enum.IntEnum`."""
 
     @classmethod
-    def from_string(cls, name: str) -> int:
-        """Return the value which corresponds to the string name."""
+    def from_value(cls, value: Union[str, int]) -> int:
+        """Return the value which corresponds to the string value."""
         try:
-            return cls.__members__[name]
-        except KeyError as e:
-            raise ValueError(f"Unknown value {name} for enum {cls.__name__}") from e
+            value = int(value)
+            return cls(value)
+        except (KeyError, ValueError, TypeError) as e:
+            raise ValueError(f"Unknown value {value} for enum {cls.__name__}") from e
 
 
 def _pack_fmt(proto_type: str) -> str:
@@ -900,9 +901,9 @@ class Message(ABC):
                     elif meta.proto_type == TYPE_ENUM:
                         enum_cls = self._betterproto.cls_by_field[field_name]
                         if isinstance(v, list):
-                            v = [enum_cls.from_string(e) for e in v]
-                        elif isinstance(v, str):
-                            v = enum_cls.from_string(v)
+                            v = [enum_cls.from_value(e) for e in v]
+                        else:
+                            v = enum_cls.from_value(v)
 
                     if v is not None:
                         setattr(self, field_name, v)
