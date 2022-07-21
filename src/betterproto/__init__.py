@@ -1158,19 +1158,19 @@ class Message(ABC):
                         if isinstance(value, typing.Iterable) and not isinstance(
                             value, str
                         ):
-                            output[cased_name] = [enum_class(el).name for el in value]
+                            output[cased_name] = [enum_class(el).value for el in value]
                         else:
                             # transparently upgrade single value to repeated
-                            output[cased_name] = [enum_class(value).name]
+                            output[cased_name] = [enum_class(value).value]
                     elif value is None:
                         if include_default_values:
                             output[cased_name] = value
                     elif meta.optional:
                         enum_class = field_types[field_name].__args__[0]
-                        output[cased_name] = enum_class(value).name
+                        output[cased_name] = enum_class(value).value
                     else:
                         enum_class = field_types[field_name]  # noqa
-                        output[cased_name] = enum_class(value).name
+                        output[cased_name] = enum_class(value).value
                 elif meta.proto_type in (TYPE_FLOAT, TYPE_DOUBLE):
                     if field_is_repeated:
                         output[cased_name] = [_dump_float(n) for n in value]
