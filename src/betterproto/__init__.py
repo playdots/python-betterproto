@@ -845,8 +845,11 @@ class Message(ABC):
 
     @classmethod
     def _type_hints(cls) -> Dict[str, Type]:
-        module = sys.modules[cls.__module__]
-        return get_type_hints(cls, module.__dict__, {})
+        global_vars = {}
+        for base in inspect.getmro(cls):
+            module = inspect.getmodule(base)
+            global_vars.update(vars(module))
+        return get_type_hints(cls, global_vars, {})
 
     @classmethod
     def _cls_for(cls, field: dataclasses.Field, index: int = 0) -> Type:
