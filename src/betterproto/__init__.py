@@ -315,6 +315,28 @@ class Enum(enum.IntEnum):
         except KeyError as e:
             raise ValueError(f"Unknown value {name} for enum {cls.__name__}") from e
 
+    @classmethod
+    def from_value(cls, value: Union[int, str]) -> "Enum":
+        """Return the value which corresponds to the value.
+
+        Parameters
+        -----------
+        value: :class:`Union[int, str]`
+            The name or value of the enum member to get
+
+        Raises
+        -------
+        :exc:`ValueError`
+            The member was not found in the Enum.
+        """
+        try:
+            if isinstance(value, str):
+                return cls.from_string(value)
+            value = int(value)
+            return cls(value)  # type: ignore
+        except KeyError as e:
+            raise ValueError(f"Unknown value {name} for enum {cls.__name__}") from e
+
 
 def _pack_fmt(proto_type: str) -> str:
     """Returns a little-endian format string for reading/writing binary."""
@@ -1229,9 +1251,9 @@ class Message(ABC):
                     elif meta.proto_type == TYPE_ENUM:
                         enum_cls = self._betterproto.cls_by_field[field_name]
                         if isinstance(v, list):
-                            v = [enum_cls.from_string(e) for e in v]
-                        elif isinstance(v, str):
-                            v = enum_cls.from_string(v)
+                            v = [enum_cls.from_value(e) for e in v]
+                        else:
+                            v = enum_cls.from_value(v)
                     elif meta.proto_type in (TYPE_FLOAT, TYPE_DOUBLE):
                         if isinstance(value[key], list):
                             v = [_parse_float(n) for n in value[key]]
