@@ -329,6 +329,28 @@ class Enum(enum.IntEnum):
         except KeyError as e:
             raise ValueError(f"Unknown value {name} for enum {cls.__name__}") from e
 
+    @classmethod
+    def from_value(cls, value: Union[int, str]) -> "Enum":
+        """Return the value which corresponds to the value.
+
+        Parameters
+        -----------
+        value: :class:`Union[int, str]`
+            The name or value of the enum member to get
+
+        Raises
+        -------
+        :exc:`ValueError`
+            The member was not found in the Enum.
+        """
+        try:
+            if isinstance(value, str):
+                return cls.from_string(value)
+            value = int(value)
+            return cls(value)  # type: ignore
+        except KeyError as e:
+            raise ValueError(f"Unknown value {name} for enum {cls.__name__}") from e
+
 
 def _pack_fmt(proto_type: str) -> str:
     """Returns a little-endian format string for reading/writing binary."""
@@ -863,8 +885,11 @@ class Message(ABC):
 
     @classmethod
     def _type_hints(cls) -> Dict[str, Type]:
-        module = sys.modules[cls.__module__]
-        return get_type_hints(cls, module.__dict__, {})
+        global_vars = {}
+        for base in inspect.getmro(cls):
+            module = inspect.getmodule(base)
+            global_vars.update(vars(module))
+        return get_type_hints(cls, global_vars, {})
 
     @classmethod
     def _cls_for(cls, field: dataclasses.Field, index: int = 0) -> Type:
@@ -1155,19 +1180,19 @@ class Message(ABC):
                         if isinstance(value, typing.Iterable) and not isinstance(
                             value, str
                         ):
-                            output[cased_name] = [enum_class(el).name for el in value]
+                            output[cased_name] = [enum_class(el).value for el in value]
                         else:
                             # transparently upgrade single value to repeated
-                            output[cased_name] = [enum_class(value).name]
+                            output[cased_name] = [enum_class(value).value]
                     elif value is None:
                         if include_default_values:
                             output[cased_name] = value
                     elif meta.optional:
                         enum_class = field_types[field_name].__args__[0]
-                        output[cased_name] = enum_class(value).name
+                        output[cased_name] = enum_class(value).value
                     else:
                         enum_class = field_types[field_name]  # noqa
-                        output[cased_name] = enum_class(value).name
+                        output[cased_name] = enum_class(value).value
                 elif meta.proto_type in (TYPE_FLOAT, TYPE_DOUBLE):
                     if field_is_repeated:
                         output[cased_name] = [_dump_float(n) for n in value]
@@ -1247,9 +1272,9 @@ class Message(ABC):
                     elif meta.proto_type == TYPE_ENUM:
                         enum_cls = self._betterproto.cls_by_field[field_name]
                         if isinstance(v, list):
-                            v = [enum_cls.from_string(e) for e in v]
-                        elif isinstance(v, str):
-                            v = enum_cls.from_string(v)
+                            v = [enum_cls.from_value(e) for e in v]
+                        else:
+                            v = enum_cls.from_value(v)
                     elif meta.proto_type in (TYPE_FLOAT, TYPE_DOUBLE):
                         if isinstance(value[key], list):
                             v = [_parse_float(n) for n in value[key]]
